@@ -74,9 +74,9 @@ class WheelSizeCommand:
     front, middle, rear: 단순 인터페이스 (좌우 같은 값)
     """
     type: str = MessageType.WHEEL_SIZE.value
-    front: float = 0.5       # [0, 1] 앞 (FL, FR)
-    rear: float = 0.5        # [0, 1] 뒤 (RL, RR)
-    middle: float = 0.5      # [0, 1] 중간 (ML, MR)
+    front: float = 0.0       # [0, 1] 앞 (FL, FR)
+    rear: float = 0.0        # [0, 1] 뒤 (RL, RR)
+    middle: float = 0.0      # [0, 1] 중간 (ML, MR)
     sizes: Optional[List[float]] = None   # [FL, FR, ML, MR, RL, RR] - 비대칭 제어용
 
 

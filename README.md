@@ -64,6 +64,10 @@ cd laptop
 python main.py --config ../config/real.yaml
 ```
 
+## SSH 터미널에서 직접 조작
+
+별도 문서 [`README_SSH.md`](README_SSH.md)를 참고한다.
+
 ## 조작
 
 | 키 | 동작 |
@@ -76,3 +80,6 @@ python main.py --config ../config/real.yaml
 | M | 조향 모드 전환 (Ackermann/Skid/Crab/Double) |
 | H | 단축키 도움말 토글 |
 | Q | 종료 |
+
+터미널 모드에서는 `A`/`D`로 조향값을 단계적으로 바꾸고 `C`로 중앙에 맞춘다.
+`R`/`F` 바퀴 크기 변경과 `M` 모드 변경은 정지 상태에서 사용한다.

@@ -71,7 +71,12 @@ python raspberry-pi/main.py --config config/real.yaml
 python laptop/main.py --config config/real.yaml
 ```
 
-`real.yaml`의 `network.laptop_ip`와 `rpi_ip`를 실제 IP로 수정 필요.
+### SSH 터미널 직접 제어 (GUI/Tailscale 불필요)
+
+별도 문서 [`README_SSH.md`](README_SSH.md)를 참고한다.
+
+GUI 네트워크 모드에서만 `real.yaml`의 `network.laptop_ip`와 `rpi_ip`가 필요하다.
+`--terminal` 모드에서는 이 두 설정을 사용하지 않는다.
 
 ## 조작법
 

@@ -3,13 +3,17 @@ REM ====================================================================
 REM Disaster Robot - Launch Script
 REM
 REM Usage:
-REM   start_robot.bat                  -- Demo (Tailscale + laptop, default)
+REM   start_robot.bat                  -- Local Wi-Fi + laptop (default)
 REM   start_robot.bat dev-wired        -- Dev (wired ICS + desktop)
-REM   start_robot.bat dev-wireless     -- Dev (Tailscale + desktop)
+REM   start_robot.bat dev-wireless     -- Local Wi-Fi + laptop
 REM
 REM Setup (once per mode):
 REM   ssh-keygen -t ed25519
+<<<<<<< HEAD
 REM   ssh-copy-id pi@0.0.0.0        (Tailscale)
+=======
+REM   ssh-copy-id pi@10.92.223.146        (local Wi-Fi)
+>>>>>>> temp
 REM   ssh-copy-id pi@192.168.137.126      (wired ICS)
 REM ====================================================================
 
@@ -18,7 +22,11 @@ setlocal
 REM ---- Parse mode argument ----
 set MODE=%1
 if "%MODE%"=="" (
+<<<<<<< HEAD
     set RPI_HOST=0.0.0.0
+=======
+    set RPI_HOST=10.92.223.146
+>>>>>>> temp
     set MODE_ARG=
     set MODE_LABEL=demo
 ) else if "%MODE%"=="dev-wired" (
@@ -26,7 +34,11 @@ if "%MODE%"=="" (
     set MODE_ARG=--mode dev-wired
     set MODE_LABEL=dev-wired
 ) else if "%MODE%"=="dev-wireless" (
+<<<<<<< HEAD
     set RPI_HOST=0.0.0.0
+=======
+    set RPI_HOST=10.92.223.146
+>>>>>>> temp
     set MODE_ARG=--mode dev-wireless
     set MODE_LABEL=dev-wireless
 ) else (
