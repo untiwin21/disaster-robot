@@ -6,58 +6,49 @@
 mode: real
 
 network:
-<<<<<<< HEAD
-  laptop_ip: "0.0.0.0"       # default: 시연 (노트북 Tailscale)
-  rpi_ip: "0.0.0.0"        # 라파 Tailscale
-=======
-  laptop_ip: "10.92.223.157"       # 로컬 Wi-Fi 노트북
-  rpi_ip: "10.92.223.146"          # 로컬 Wi-Fi 라즈베리파이
->>>>>>> temp
+  laptop_ip: "10.92.223.157" # 로컬 Wi-Fi 노트북
+  rpi_ip: "10.92.223.146" # 로컬 Wi-Fi 라즈베리파이
   video_port: 9999
   command_port: 9998
   telemetry_port: 9997
   video_chunk_size: 1400
   modes:
     dev-wired:
-      laptop_ip: "192.168.137.1"     # 데스크탑 ICS
+      laptop_ip: "192.168.137.1" # 데스크탑 ICS
     dev-wireless:
-<<<<<<< HEAD
-      laptop_ip: "0.0.0.0"     # 데스크탑 Tailscale
-=======
-      laptop_ip: "10.92.223.157"      # 로컬 Wi-Fi 노트북
->>>>>>> temp
+      laptop_ip: "10.92.223.157" # 로컬 Wi-Fi 노트북
 
 motor_pins:
   # PCA9685 채널 (서보)
-  transform_channels: [0, 1, 2, 3, 4, 5]    # 변형 서보 6개 (FL, FR, ML, MR, RL, RR)
-  steer_channels: [6, 7, 8, 9]              # 조향 서보 4개 (FL, FR, RL, RR)
+  transform_channels: [0, 1, 2, 3, 4, 5] # 변형 서보 6개 (FL, FR, ML, MR, RL, RR)
+  steer_channels: [6, 7, 8, 9] # 조향 서보 4개 (FL, FR, RL, RR)
   # BTS#1 좌측 그룹 (FL, ML, RL 병렬)
-  dc_left_rpwm_pin: 19    # 라파 핀 12 - 전진 PWM
-  dc_left_lpwm_pin: 13    # 라파 핀 32 - 후진 PWM
-  dc_left_r_en_pin: 23     # 라파 핀 31 - R_EN 직결
-  dc_left_l_en_pin: 24    # 라파 핀 36 - L_EN 직결
+  dc_left_rpwm_pin: 19 # 라파 핀 12 - 전진 PWM
+  dc_left_lpwm_pin: 13 # 라파 핀 32 - 후진 PWM
+  dc_left_r_en_pin: 23 # 라파 핀 31 - R_EN 직결
+  dc_left_l_en_pin: 24 # 라파 핀 36 - L_EN 직결
   # BTS#2 우측 그룹 (FR, MR, RR 병렬)
-  dc_right_rpwm_pin: 18   # 라파 핀 35 - 전진 PWM
-  dc_right_lpwm_pin: 12   # 라파 핀 33 - 후진 PWM
-  dc_right_r_en_pin: 6   # 라파 핀 16 - R_EN 직결
-  dc_right_l_en_pin: 16   # 라파 핀 18 - L_EN 직결
+  dc_right_rpwm_pin: 18 # 라파 핀 35 - 전진 PWM
+  dc_right_lpwm_pin: 12 # 라파 핀 33 - 후진 PWM
+  dc_right_r_en_pin: 6 # 라파 핀 16 - R_EN 직결
+  dc_right_l_en_pin: 16 # 라파 핀 18 - L_EN 직결
 
 encoder_pins:
   # JGB37-520B (12V 107RPM, 1:90, 11 PPR) 기준
   # 좌측 미들 (ML) 엔코더
-  encoder_ml_c1_pin: 17     # 라파 핀 11 - A상
-  encoder_ml_c2_pin: 27     # 라파 핀 13 - B상
+  encoder_ml_c1_pin: 17 # 라파 핀 11 - A상
+  encoder_ml_c2_pin: 27 # 라파 핀 13 - B상
   # 우측 미들 (MR) 엔코더
-  encoder_mr_c1_pin: 22     # 라파 핀 15 - A상
-  encoder_mr_c2_pin: 5      # 라파 핀 29 - B상
+  encoder_mr_c1_pin: 22 # 라파 핀 15 - A상
+  encoder_mr_c2_pin: 5 # 라파 핀 29 - B상
   # 분해능
-  encoder_counts_per_rev: 3960    # 11 × 4 (quadrature) × 90 (gear)
-  encoder_wheel_circumference: 0.2042   # π × 0.065m (65mm 바퀴 가정)
+  encoder_counts_per_rev: 3960 # 11 × 4 (quadrature) × 90 (gear)
+  encoder_wheel_circumference: 0.2042 # π × 0.065m (65mm 바퀴 가정)
   # 방향 보정 (모터 결선 방향 반대면 true)
   encoder_invert_left: false
   encoder_invert_right: false
 
-optical_flow_scale: 0.001   # pixel/sec → m/s. 캘리브레이션 후 업데이트
+optical_flow_scale: 0.001 # pixel/sec → m/s. 캘리브레이션 후 업데이트
 
 camera:
   device_index: 0
@@ -76,29 +67,29 @@ yolo:
 
 robot:
   # ⚠️ 기계팀 설계 도착 후 반드시 업데이트
-  wheelbase: 0.30                # [m] 임시 (기계팀 확정 시 수정)
-  middle_axle_offset: 0.0        # [m] 중간축이 차체 중앙이면 0
-  track: 0.25                    # [m] 임시
+  wheelbase: 0.30 # [m] 임시 (기계팀 확정 시 수정)
+  middle_axle_offset: 0.0 # [m] 중간축이 차체 중앙이면 0
+  track: 0.25 # [m] 임시
   num_wheels: 6
-  
-  mass: 5.0                      # [kg] 임시
-  moment_of_inertia: 0.1         # [kg·m²] 임시
-  
+
+  mass: 5.0 # [kg] 임시
+  moment_of_inertia: 0.1 # [kg·m²] 임시
+
   wheel:
-    radius_min: 0.03             # [m] 3cm
-    radius_max: 0.06             # [m] 6cm
-    radius_default: 0.04         # [m] 4cm
+    radius_min: 0.03 # [m] 3cm
+    radius_max: 0.06 # [m] 6cm
+    radius_default: 0.04 # [m] 4cm
     size_change_rate: 0.5
-  
+
   steering:
-    max_angle: 0.524             # [rad] 30도
-    rate_limit: 1.5              # [rad/s]
+    max_angle: 0.524 # [rad] 30도
+    rate_limit: 1.5 # [rad/s]
     front_only: true
-  
+
   motion:
-    max_velocity: 0.5            # [m/s] 임시
-    max_acceleration: 1.0        # [m/s²] 임시
-    max_yaw_rate: 1.5            # [rad/s] 임시
+    max_velocity: 0.5 # [m/s] 임시
+    max_acceleration: 1.0 # [m/s²] 임시
+    max_yaw_rate: 1.5 # [rad/s] 임시
 
 tire:
   # 시뮬과 동일한 기본값 사용 (실측 후 조정)
@@ -109,21 +100,21 @@ tire:
 
 control:
   loop_rate: 50
-  
+
   velocity_pid:
     kp: 1.0
     ki: 0.1
     kd: 0.05
     integral_limit: 1.0
     output_limit: 1.0
-  
+
   steering_pid:
     kp: 2.0
     ki: 0.0
     kd: 0.1
     integral_limit: 0.5
     output_limit: 1.0
-  
+
   pure_pursuit:
     lookahead_distance: 0.5
     min_lookahead: 0.2
@@ -137,12 +128,12 @@ sensors:
     min_range: 0.02
     # ⚠️ 실제 센서 장착 위치로 업데이트 필요
     sensors:
-      - {name: "front",       x: 0.15, y: 0.0,    yaw: 0.0}
-      - {name: "front_left",  x: 0.10, y: 0.10,   yaw: 0.785}
-      - {name: "front_right", x: 0.10, y: -0.10,  yaw: -0.785}
-      - {name: "rear",        x: -0.15, y: 0.0,   yaw: 3.14}
-      - {name: "left",        x: 0.0, y: 0.125,   yaw: 1.5708}
-      - {name: "right",       x: 0.0, y: -0.125,  yaw: -1.5708}
+      - { name: "front", x: 0.15, y: 0.0, yaw: 0.0 }
+      - { name: "front_left", x: 0.10, y: 0.10, yaw: 0.785 }
+      - { name: "front_right", x: 0.10, y: -0.10, yaw: -0.785 }
+      - { name: "rear", x: -0.15, y: 0.0, yaw: 3.14 }
+      - { name: "left", x: 0.0, y: 0.125, yaw: 1.5708 }
+      - { name: "right", x: 0.0, y: -0.125, yaw: -1.5708 }
     danger_threshold: 0.30
     warning_threshold: 0.80
 
