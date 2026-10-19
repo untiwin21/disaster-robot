@@ -47,7 +47,7 @@ from shared.messages import (
 )
 
 from camera import create_camera
-from motor import create_motor_hal
+from motor import SimMotorHAL, create_motor_hal
 from sensor import create_ultrasonic_hal
 from kinematics import KinematicsManager
 from estimation import DifferentialOdometry, WheelEncoderData
@@ -166,10 +166,137 @@ def telemetry_loop(telemetry_conn, ultrasonic_hal, robot_state,
 # 메인
 # ════════════════════════════════════════════════════════════════
 
+def terminal_control(config: Config) -> None:
+    """SSH TTY에서 네트워크/GUI 없이 로봇을 직접 조작한다."""
+    if not sys.stdin.isatty():
+        raise RuntimeError("터미널 제어는 TTY가 필요합니다. ssh -t 로 접속하세요.")
+
+    import select
+    import termios
+    import tty
+
+    if not config.is_simulation:
+        print("[Terminal] 실제 모터와 서보를 초기화합니다.")
+        print("[Terminal] 로봇을 바닥에서 띄우거나 주변을 비운 뒤 진행하세요.")
+        if input("계속하려면 RUN 입력: ").strip() != "RUN":
+            print("[Terminal] 취소됨")
+            return
+
+    motor = create_motor_hal(config)
+    if not config.is_simulation and isinstance(motor, SimMotorHAL):
+        motor.shutdown()
+        raise RuntimeError("실제 모터 초기화에 실패하여 터미널 제어를 중단합니다.")
+    kinematics_mgr = KinematicsManager(config.robot)
+
+    throttle = 0.0
+    steer = 0.0
+    wheel_sizes = [0.0] * 6
+    drive_deadline = 0.0
+    deadman_timeout = 0.5
+    loop_interval = 1.0 / max(1, config.control.loop_rate)
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+
+    def show_status(message: str = "") -> None:
+        status = (
+            f"mode={kinematics_mgr.current_name:<17} "
+            f"throttle={throttle:+.1f} steer={steer:+.1f} "
+            f"wheel_size={wheel_sizes[0]:.1f}"
+        )
+        if message:
+            status += f" | {message}"
+        print(f"\r{status:<110}", end="", flush=True)
+
+    print("[Terminal] W/S: 전진/후진(누르는 동안)  A/D: 조향  C: 조향 중앙")
+    print("[Terminal] R/F: 바퀴 크기 +/-  M: 조향 모드  Space: 정지  Q: 종료")
+    print(f"[Terminal] W/S 입력이 {deadman_timeout:.1f}초 끊기면 자동 정지합니다.")
+
+    try:
+        tty.setcbreak(fd)
+        show_status("준비 완료")
+
+        while True:
+            now = time.monotonic()
+            readable, _, _ = select.select([sys.stdin], [], [], 0)
+            message = ""
+
+            if readable:
+                key = os.read(fd, 1).decode(errors="ignore")
+                if key == "":
+                    message = "SSH 입력 종료"
+                    break
+
+                key_lower = key.lower()
+                if key_lower == "q" or key == "\x03":
+                    message = "종료"
+                    break
+                elif key == " ":
+                    throttle = 0.0
+                    steer = 0.0
+                    drive_deadline = 0.0
+                    motor.emergency_stop()
+                    message = "EMERGENCY STOP"
+                elif key_lower == "w":
+                    throttle = 1.0
+                    drive_deadline = now + deadman_timeout
+                elif key_lower == "s":
+                    throttle = -1.0
+                    drive_deadline = now + deadman_timeout
+                elif key_lower == "a":
+                    steer = min(1.0, steer + 0.2)
+                elif key_lower == "d":
+                    steer = max(-1.0, steer - 0.2)
+                elif key_lower == "c":
+                    steer = 0.0
+                elif key_lower == "m":
+                    throttle = 0.0
+                    drive_deadline = 0.0
+                    motor.emergency_stop()
+                    message = f"조향 모드 → {kinematics_mgr.cycle_next()}"
+                elif key_lower in ("r", "f"):
+                    if throttle != 0.0:
+                        message = "정지 상태에서만 바퀴 크기 변경 가능"
+                    else:
+                        delta = 0.1 if key_lower == "r" else -0.1
+                        size = max(0.0, min(1.0, wheel_sizes[0] + delta))
+                        wheel_sizes = [size] * 6
+                        motor.set_wheel_sizes(wheel_sizes)
+                        message = f"바퀴 크기 → {size:.1f}"
+
+                show_status(message)
+
+            now = time.monotonic()
+            if throttle != 0.0 and now >= drive_deadline:
+                throttle = 0.0
+                motor.emergency_stop()
+                show_status("데드맨 타임아웃 → 자동 정지")
+
+            command = kinematics_mgr.compute(throttle, steer)
+            motor.set_wheel_velocities([wheel.velocity for wheel in command.wheels])
+            motor.set_steer_angles([wheel.steer_angle for wheel in command.wheels])
+            time.sleep(loop_interval)
+
+    except KeyboardInterrupt:
+        pass
+    finally:
+        try:
+            motor.emergency_stop()
+        finally:
+            try:
+                motor.shutdown()
+            finally:
+                try:
+                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+                except termios.error:
+                    pass
+        print("\n[Terminal] 모터 정지 및 GPIO 해제 완료")
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', default='config/sim.yaml',
                         help='config YAML 경로')
+    parser.add_argument('--terminal', action='store_true',
+                        help='SSH 터미널에서 GUI/네트워크 없이 직접 조작')
     parser.add_argument('--mode', choices=['dev-wired', 'dev-wireless'],
                         default=None,
                         help='네트워크 모드 (기본: 시연용)')
@@ -183,6 +310,10 @@ def main():
         if 'laptop_ip' in mode_cfg:
             config.network.laptop_ip = mode_cfg['laptop_ip']
             print(f"[Main] 네트워크 모드: {args.mode} (laptop_ip → {config.network.laptop_ip})")
+
+    if args.terminal:
+        terminal_control(config)
+        return
     
     print(f"[Main] Config 로드 완료 (mode={config.mode})")
     

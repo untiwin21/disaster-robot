@@ -174,7 +174,7 @@ class GpioMotorHAL(MotorHAL):
         for i, ch in enumerate(self._transform_channels):
             cal = self._find_transform_cal(ch)
             if cal:
-                pulse = cal.value_to_pulse(0.5)
+                pulse = cal.value_to_pulse(0.0)
                 self._pca.set_pulse_us(ch, pulse)
         # 조향 서보 4개: 각도 0
         for i, ch in enumerate(self._steer_channels):

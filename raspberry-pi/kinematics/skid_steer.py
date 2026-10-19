@@ -47,7 +47,7 @@ class SkidSteerKinematics(KinematicsBase):
         
         # 차체 선속도와 각속도
         v = throttle * self.max_velocity         # [m/s]
-        omega = steer * self.max_yaw_rate        # [rad/s]
+        omega = steer * self.max_yaw_rate * 2.0  # [rad/s]
         
         # 좌우 그룹 속도
         # 좌회전(steer>0)일 때 우측이 빨라야 함 → ω·W/2를 우측에 더함

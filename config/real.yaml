@@ -6,8 +6,8 @@
 mode: real
 
 network:
-  laptop_ip: "100.83.6.44"       # default: 시연 (노트북 Tailscale)
-  rpi_ip: "100.67.88.118"        # 라파 Tailscale
+  laptop_ip: "10.92.223.157"       # 로컬 Wi-Fi 노트북
+  rpi_ip: "10.92.223.146"          # 로컬 Wi-Fi 라즈베리파이
   video_port: 9999
   command_port: 9998
   telemetry_port: 9997
@@ -16,22 +16,22 @@ network:
     dev-wired:
       laptop_ip: "192.168.137.1"     # 데스크탑 ICS
     dev-wireless:
-      laptop_ip: "100.92.46.121"     # 데스크탑 Tailscale
+      laptop_ip: "10.92.223.157"      # 로컬 Wi-Fi 노트북
 
 motor_pins:
   # PCA9685 채널 (서보)
   transform_channels: [0, 1, 2, 3, 4, 5]    # 변형 서보 6개 (FL, FR, ML, MR, RL, RR)
   steer_channels: [6, 7, 8, 9]              # 조향 서보 4개 (FL, FR, RL, RR)
   # BTS#1 좌측 그룹 (FL, ML, RL 병렬)
-  dc_left_rpwm_pin: 18    # 라파 핀 12 - 전진 PWM
-  dc_left_lpwm_pin: 12    # 라파 핀 32 - 후진 PWM
-  dc_left_r_en_pin: 6     # 라파 핀 31 - R_EN 직결
-  dc_left_l_en_pin: 16    # 라파 핀 36 - L_EN 직결
+  dc_left_rpwm_pin: 19    # 라파 핀 12 - 전진 PWM
+  dc_left_lpwm_pin: 13    # 라파 핀 32 - 후진 PWM
+  dc_left_r_en_pin: 23     # 라파 핀 31 - R_EN 직결
+  dc_left_l_en_pin: 24    # 라파 핀 36 - L_EN 직결
   # BTS#2 우측 그룹 (FR, MR, RR 병렬)
-  dc_right_rpwm_pin: 19   # 라파 핀 35 - 전진 PWM
-  dc_right_lpwm_pin: 13   # 라파 핀 33 - 후진 PWM
-  dc_right_r_en_pin: 23   # 라파 핀 16 - R_EN 직결
-  dc_right_l_en_pin: 24   # 라파 핀 18 - L_EN 직결
+  dc_right_rpwm_pin: 18   # 라파 핀 35 - 전진 PWM
+  dc_right_lpwm_pin: 12   # 라파 핀 33 - 후진 PWM
+  dc_right_r_en_pin: 6   # 라파 핀 16 - R_EN 직결
+  dc_right_l_en_pin: 16   # 라파 핀 18 - L_EN 직결
 
 encoder_pins:
   # JGB37-520B (12V 107RPM, 1:90, 11 PPR) 기준
@@ -87,7 +87,7 @@ robot:
     front_only: true
   
   motion:
-    max_velocity: 1.0            # [m/s] 임시
+    max_velocity: 0.5            # [m/s] 임시
     max_acceleration: 1.0        # [m/s²] 임시
     max_yaw_rate: 1.5            # [rad/s] 임시
 

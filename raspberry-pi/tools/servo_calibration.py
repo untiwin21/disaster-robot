@@ -308,7 +308,7 @@ def main():
                     msg = f"MAX = {current_pulse}us 저장됨 (메모리). F2로 파일 저장."
             
             # 파일 저장 (F2 또는 w - SSH 환경에서 F-key 안 먹을 때 대안)
-            elif key == 'F2' or key == 'w':
+            elif key == 'F2' or key == 'x':
                 cal.save(CALIBRATION_FILE)
                 msg = f"파일 저장 완료: {CALIBRATION_FILE}"
             

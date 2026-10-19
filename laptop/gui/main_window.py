@@ -100,9 +100,9 @@ class MainWindow(QMainWindow):
         # ─── 상태 ───
         self.throttle = 0.0
         self.steer = 0.0
-        self.wheel_size_front = 0.5
-        self.wheel_size_rear = 0.5
-        self.wheel_sizes = [0.5] * 6        # [FL, FR, ML, MR, RL, RR]
+        self.wheel_size_front = 0.0
+        self.wheel_size_rear = 0.0
+        self.wheel_sizes = [0.0] * 6        # [FL, FR, ML, MR, RL, RR]
         self.selected_wheel = None          # 인덱스 0~5 또는 None(전체)
         self.mode_idx = 0
         self.show_help = True

@@ -39,7 +39,7 @@ class MotorState:
     """현재 모터 상태 (디버깅/텔레메트리용)"""
     wheel_velocities: List[float] = field(default_factory=lambda: [0.0]*6)  # [m/s] (FL, FR, ML, MR, RL, RR)
     steer_angles: List[float] = field(default_factory=lambda: [0.0]*6)      # [rad] 6개
-    wheel_sizes: List[float] = field(default_factory=lambda: [0.5]*6)       # [0,1] 6개
+    wheel_sizes: List[float] = field(default_factory=lambda: [0.0]*6)       # [0,1] 6개
     last_update_time: float = 0.0
     
     @property
