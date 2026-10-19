@@ -177,10 +177,6 @@ def terminal_control(config: Config) -> None:
 
     if not config.is_simulation:
         print("[Terminal] 실제 모터와 서보를 초기화합니다.")
-        print("[Terminal] 로봇을 바닥에서 띄우거나 주변을 비운 뒤 진행하세요.")
-        if input("계속하려면 RUN 입력: ").strip() != "RUN":
-            print("[Terminal] 취소됨")
-            return
 
     motor = create_motor_hal(config)
     if not config.is_simulation and isinstance(motor, SimMotorHAL):

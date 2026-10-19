@@ -27,9 +27,8 @@ source ~/dr-env/bin/activate
 python raspberry-pi/main.py --config config/real.yaml --terminal
 ```
 
-실제 하드웨어 모드에서는 안전 확인 후 `RUN`을 입력해야 GPIO와 모터 드라이버를
-초기화한다. 주변이 비어 있고 로봇이 갑자기 움직여도 위험하지 않은 상태인지 먼저
-확인한다.
+실제 하드웨어 모드에서는 실행 즉시 GPIO와 모터 드라이버를 초기화한다. 실행 전에
+주변이 비어 있고 로봇이 갑자기 움직여도 위험하지 않은 상태인지 먼저 확인한다.
 
 ## 조작키
 
@@ -56,7 +55,7 @@ source ~/dr-env/bin/activate
 python raspberry-pi/main.py --config config/sim.yaml --terminal
 ```
 
-시뮬레이션 모드는 `RUN` 확인 없이 시작하며 실제 GPIO를 사용하지 않는다.
+시뮬레이션 모드는 실제 GPIO를 사용하지 않는다.
 
 ## 문제 해결
 
