@@ -8,8 +8,8 @@ mode: simulation
 # 네트워크
 # ─────────────────────────────────────────────
 network:
-  laptop_ip: "0.0.0.0"     # 노트북 Tailscale IP
-  rpi_ip: "0.0.0.0"      # 라파 Tailscale IP
+  laptop_ip: "0.0.0.0"     # 같은 PC에서 두 프로세스 실행
+  rpi_ip: "0.0.0.0"
   video_port: 9999
   command_port: 9998
   telemetry_port: 9997

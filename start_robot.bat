@@ -5,7 +5,6 @@ REM
 REM Usage:
 REM   start_robot.bat                  -- Local Wi-Fi + laptop (default)
 REM   start_robot.bat dev-wired        -- Dev (wired ICS + desktop)
-REM   start_robot.bat dev-wireless     -- Local Wi-Fi + laptop
 REM
 REM Setup (once per mode):
 REM   ssh-keygen -t ed25519
@@ -20,18 +19,14 @@ set MODE=%1
 if "%MODE%"=="" (
     set RPI_HOST=10.92.223.146
     set MODE_ARG=
-    set MODE_LABEL=demo
+    set MODE_LABEL=local-wifi
 ) else if "%MODE%"=="dev-wired" (
     set RPI_HOST=192.168.137.126
     set MODE_ARG=--mode dev-wired
     set MODE_LABEL=dev-wired
-) else if "%MODE%"=="dev-wireless" (
-    set RPI_HOST=10.92.223.146
-    set MODE_ARG=--mode dev-wireless
-    set MODE_LABEL=dev-wireless
 ) else (
     echo Unknown mode: %MODE%
-    echo Usage: start_robot.bat [dev-wired^|dev-wireless]
+    echo Usage: start_robot.bat [dev-wired]
     exit /b 1
 )
 

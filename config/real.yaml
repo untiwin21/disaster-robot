@@ -15,8 +15,6 @@ network:
   modes:
     dev-wired:
       laptop_ip: "192.168.137.1" # 데스크탑 ICS
-    dev-wireless:
-      laptop_ip: "10.92.223.157" # 로컬 Wi-Fi 노트북
 
 motor_pins:
   # PCA9685 채널 (서보)

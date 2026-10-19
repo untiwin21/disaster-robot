@@ -297,9 +297,9 @@ def main():
                         help='config YAML 경로')
     parser.add_argument('--terminal', action='store_true',
                         help='SSH 터미널에서 GUI/네트워크 없이 직접 조작')
-    parser.add_argument('--mode', choices=['dev-wired', 'dev-wireless'],
+    parser.add_argument('--mode', choices=['dev-wired'],
                         default=None,
-                        help='네트워크 모드 (기본: 시연용)')
+                        help='네트워크 모드 (기본: 로컬 Wi-Fi)')
     args = parser.parse_args()
     
     config = load_config(ROOT / args.config)

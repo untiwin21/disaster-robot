@@ -71,7 +71,7 @@ python raspberry-pi/main.py --config config/real.yaml
 python laptop/main.py --config config/real.yaml
 ```
 
-### SSH 터미널 직접 제어 (GUI/Tailscale 불필요)
+### SSH 터미널 직접 제어 (GUI 불필요)
 
 별도 문서 [`README_SSH.md`](README_SSH.md)를 참고한다.
 
