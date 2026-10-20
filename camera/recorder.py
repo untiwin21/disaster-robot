@@ -57,7 +57,9 @@ _PROFILES = [
 ]
 
 # 끊겨도 재생 가능한 fragmented MP4 (키프레임마다 조각 기록)
-_MP4_FLAGS = "movflags=+frag_keyframe+empty_moov+default_base_moof"
+# delay_moov: h264_v4l2m2m은 SPS/PPS를 첫 프레임과 함께 내보내므로, moov(avcC)를
+# 첫 조각까지 미뤄서 써야 한다. 없으면 avcC가 비어 영상이 검게 재생된다.
+_MP4_FLAGS = "movflags=+frag_keyframe+empty_moov+delay_moov+default_base_moof"
 
 
 def _log(msg: str) -> None:
