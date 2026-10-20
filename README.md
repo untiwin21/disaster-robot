@@ -72,10 +72,10 @@ python main.py --sim
 `main.py`를 실행하면 USB 카메라 연결을 감시하다가, 카메라가 연결되면 영상과 소리(카메라
 마이크)를 자동으로 녹화한다. 카메라를 뽑으면 녹화를 멈추고, 다시 꽂으면 새 파일로 녹화한다.
 
-- 저장 위치: `~/disaster-robot/recordings/YYYYmmdd_HHMMSS.mkv`
+- 저장 위치: `~/disaster-robot/recordings/YYYYmmdd_HHMMSS.mp4` (H.264 + AAC)
 - 10분(`segment_seconds`)마다 새 파일로 나눠 저장한다.
-- 카메라의 MJPEG 영상을 재인코딩 없이 저장해서 CPU를 거의 쓰지 않는다. MJPEG를 지원하지 않는
-  카메라는 H.264로 인코딩한다.
+- 라즈베리파이 하드웨어 H.264 인코더를 우선 사용하고, 없으면 CPU(libx264)로 인코딩한다.
+- 녹화 중 전원이 끊기거나 카메라가 빠져도 그 직전까지는 재생된다 (fragmented MP4).
 - 남은 저장 공간이 500MB(`min_free_mb`) 미만이면 녹화를 멈춘다.
 - 녹화를 끄려면 `--no-record`를 붙이거나 config의 `recording.enabled`를 `false`로 바꾼다.
 - ffmpeg 에러 로그는 `recordings/ffmpeg.log`에 남는다.
@@ -89,7 +89,7 @@ sudo apt install ffmpeg
 녹화 파일을 노트북으로 가져오려면 노트북에서:
 
 ```bash
-scp "pi@10.92.223.146:~/disaster-robot/recordings/*.mkv" .
+scp "pi@10.92.223.146:~/disaster-robot/recordings/*.mp4" .
 ```
 
 ## 조작키
@@ -97,6 +97,8 @@ scp "pi@10.92.223.146:~/disaster-robot/recordings/*.mkv" .
 | 키 | 동작 |
 |---|---|
 | `W` / `S` | 전진 / 후진. 누르는 동안 반복 입력되며 0.5초(첫 입력 직후는 1초) 끊기면 자동 정지 |
+| `1`~`9` / `0` | 속도 10~90% / 100% (기본 50%). 주행 중에도 바로 반영 |
+| `+` / `-` | 속도 10%씩 증가 / 감소 (최소 10%) |
 | `A` / `D` | 조향값을 왼쪽 / 오른쪽으로 단계 조절 |
 | `C` | 조향 중앙 |
 | `R` / `F` | 정지 상태에서 전체 바퀴 크기 증가 / 감소 |

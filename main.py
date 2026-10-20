@@ -44,7 +44,9 @@ def terminal_control(config: Config) -> None:
         raise RuntimeError("실제 모터 초기화에 실패하여 터미널 제어를 중단합니다.")
     kinematics_mgr = KinematicsManager(config.robot)
 
-    throttle = 0.0
+    drive_dir = 0       # 1: 전진, -1: 후진, 0: 정지
+    speed = 0.5         # 속도 단계 [0.1, 1.0] (throttle = drive_dir × speed)
+    speed_step = 0.1
     steer = 0.0
     wheel_sizes = [0.0] * 6
     drive_deadline = 0.0
@@ -59,7 +61,7 @@ def terminal_control(config: Config) -> None:
     def show_status(message: str = "") -> None:
         status = (
             f"mode={kinematics_mgr.current_name:<17} "
-            f"throttle={throttle:+.1f} steer={steer:+.1f} "
+            f"speed={speed * 100:3.0f}% throttle={drive_dir * speed:+.1f} steer={steer:+.1f} "
             f"wheel_size={wheel_sizes[0]:.1f}"
         )
         if message:
@@ -67,6 +69,7 @@ def terminal_control(config: Config) -> None:
         print(f"\r{status:<110}", end="", flush=True)
 
     print("[Terminal] W/S: 전진/후진(누르는 동안)  A/D: 조향  C: 조향 중앙")
+    print("[Terminal] 1~9/0: 속도 10~90/100%  +/-: 속도 ±10%")
     print("[Terminal] R/F: 바퀴 크기 +/-  M: 조향 모드  Space: 정지  Q: 종료")
     print(
         f"[Terminal] W/S 입력이 {deadman_timeout:.1f}초 끊기면 자동 정지합니다. "
@@ -93,16 +96,23 @@ def terminal_control(config: Config) -> None:
                     message = "종료"
                     break
                 elif key == " ":
-                    throttle = 0.0
+                    drive_dir = 0
                     steer = 0.0
                     drive_deadline = 0.0
                     motor.emergency_stop()
                     message = "EMERGENCY STOP"
                 elif key_lower in ("w", "s"):
-                    new_throttle = 1.0 if key_lower == "w" else -1.0
-                    timeout = deadman_timeout if throttle == new_throttle else initial_deadman_timeout
-                    throttle = new_throttle
+                    new_dir = 1 if key_lower == "w" else -1
+                    timeout = deadman_timeout if drive_dir == new_dir else initial_deadman_timeout
+                    drive_dir = new_dir
                     drive_deadline = now + timeout
+                elif key.isdigit():
+                    speed = 1.0 if key == "0" else int(key) / 10
+                    message = f"속도 → {speed * 100:.0f}%"
+                elif key in ("+", "=", "-", "_"):
+                    delta = speed_step if key in ("+", "=") else -speed_step
+                    speed = round(max(speed_step, min(1.0, speed + delta)), 2)
+                    message = f"속도 → {speed * 100:.0f}%"
                 elif key_lower == "a":
                     steer = min(1.0, steer + 0.2)
                 elif key_lower == "d":
@@ -110,12 +120,12 @@ def terminal_control(config: Config) -> None:
                 elif key_lower == "c":
                     steer = 0.0
                 elif key_lower == "m":
-                    throttle = 0.0
+                    drive_dir = 0
                     drive_deadline = 0.0
                     motor.emergency_stop()
                     message = f"조향 모드 → {kinematics_mgr.cycle_next()}"
                 elif key_lower in ("r", "f"):
-                    if throttle != 0.0:
+                    if drive_dir != 0:
                         message = "정지 상태에서만 바퀴 크기 변경 가능"
                     else:
                         delta = 0.1 if key_lower == "r" else -0.1
@@ -127,12 +137,12 @@ def terminal_control(config: Config) -> None:
                 show_status(message)
 
             now = time.monotonic()
-            if throttle != 0.0 and now >= drive_deadline:
-                throttle = 0.0
+            if drive_dir != 0 and now >= drive_deadline:
+                drive_dir = 0
                 motor.emergency_stop()
                 show_status("데드맨 타임아웃 → 자동 정지")
 
-            command = kinematics_mgr.compute(throttle, steer)
+            command = kinematics_mgr.compute(drive_dir * speed, steer)
             motor.set_wheel_velocities([wheel.velocity for wheel in command.wheels])
             motor.set_steer_angles([wheel.steer_angle for wheel in command.wheels])
             time.sleep(loop_interval)

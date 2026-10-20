@@ -8,13 +8,15 @@ USB 카메라가 연결되면 자동으로 녹화를 시작하고, 분리되면 
     watch 스레드 (poll_interval마다)
       ├─ /dev/v4l/by-id/usb-*-video-index0 로 USB 카메라 탐색
       ├─ 같은 USB 장치의 ALSA 마이크 탐색 (없으면 다른 USB 마이크, 그것도 없으면 영상만)
-      └─ ffmpeg 프로세스 실행 → recordings/YYYYmmdd_HHMMSS.mkv
+      └─ ffmpeg 프로세스 실행 → recordings/YYYYmmdd_HHMMSS.mp4
 
-[인코딩]
-- 1순위: 카메라 MJPEG 스트림을 재인코딩 없이 저장 (CPU 거의 안 씀)
-- MJPEG 미지원 카메라: raw 입력을 libx264 ultrafast로 인코딩
-- 소리: AAC
-- 컨테이너는 MKV: 전원 차단/카메라 분리로 중간에 끊겨도 앞부분은 재생 가능
+[인코딩] H.264 + AAC, 아래 순서로 시도 (시작 실패 시 다음 방식)
+1. MJPEG 입력 → 하드웨어 인코더 h264_v4l2m2m (라파4, CPU 부담 적음)
+2. MJPEG 입력 → libx264 ultrafast (하드웨어 인코더가 없는 라파5 등)
+3. 카메라 기본 입력 → libx264 ultrafast (MJPEG 미지원 카메라)
+
+[파일]
+- fragmented MP4: 전원 차단/카메라 분리로 중간에 끊겨도 앞부분은 재생 가능
 - segment_seconds마다 파일을 나눠서 손상 범위를 줄인다
 
 [필요]
@@ -46,10 +48,16 @@ class _Profile:
     video_codec: List[str]
 
 
+_X264 = ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p"]
+
 _PROFILES = [
-    _Profile("mjpeg-copy", "mjpeg", ["-c:v", "copy"]),
-    _Profile("raw-h264", None, ["-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p"]),
+    _Profile("mjpeg-hw-h264", "mjpeg", ["-c:v", "h264_v4l2m2m", "-b:v", "2M", "-pix_fmt", "yuv420p"]),
+    _Profile("mjpeg-x264", "mjpeg", _X264),
+    _Profile("raw-x264", None, _X264),
 ]
+
+# 끊겨도 재생 가능한 fragmented MP4 (키프레임마다 조각 기록)
+_MP4_FLAGS = "movflags=+frag_keyframe+empty_moov+default_base_moof"
 
 
 def _log(msg: str) -> None:
@@ -213,12 +221,13 @@ class UsbAvRecorder:
         cmd += ["-map", "0:v"]
         if mic:
             cmd += ["-map", "1:a", "-c:a", "aac", "-b:a", "128k"]
-        cmd += profile.video_codec
+        # 2초마다 키프레임: 파일 분할/조각 기록 단위
+        cmd += profile.video_codec + ["-g", str(self.fps * 2)]
 
-        pattern = str(self.output_dir / "%Y%m%d_%H%M%S.mkv")
+        pattern = str(self.output_dir / "%Y%m%d_%H%M%S.mp4")
         cmd += ["-f", "segment", "-segment_time", str(self.segment_seconds),
-                "-segment_format", "matroska", "-reset_timestamps", "1",
-                "-strftime", "1", pattern]
+                "-segment_format", "mp4", "-segment_format_options", _MP4_FLAGS,
+                "-reset_timestamps", "1", "-strftime", "1", pattern]
         return cmd
 
     def _start_ffmpeg(self, device: str) -> None:
