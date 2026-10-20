@@ -1,19 +1,12 @@
 # Disaster Rescue Robot
 
-재난 구조 로봇 원격 조종 시스템
+재난 구조 로봇 제어 시스템
 
-## 시스템 구성
+로봇은 라즈베리파이에 SSH로 접속한 터미널에서만 조작한다. 네트워크 원격 제어나 GUI는 없다.
+SSH로 접속할 수 있는 네트워크라면 Wi-Fi, 유선 LAN 등 연결 방식은 상관없다.
 
 ```
-┌───────────────────────┐                     ┌──────────────────────┐
-│   노트북 (조종석)        │                    │  라즈베리파이 (로봇)    │
-│                       │  TCP 9998: 제어 →   │                      │
-│  - PySide6 GUI       │ ──────────────────▶ │  - 카메라 / 센서       │
-│  - YOLOv8 사람 탐지    │                    │  - 모터 컨트롤러       │
-│  - 키보드 조종         │ ◀── UDP 9999: 영상 │  - 기구학/제어        │
-│  - 레이더/시계열 시각화 │                    │                      │
-│                       │ ◀── TCP 9997: 텔레 │                      │
-└───────────────────────┘                     └──────────────────────┘
+[SSH 터미널 키 입력] ──▶ raspberry-pi/main.py ──▶ Kinematics ──▶ Motor HAL (BTS7960 / PCA9685)
 ```
 
 ## 디렉토리
@@ -21,13 +14,7 @@
 ```
 disaster-robot/
 ├── config/                   # YAML 파라미터 (하드웨어 스펙, 제어 게인 등)
-├── laptop/                   # 조종석
-│   ├── communication/        # 소켓 송수신
-│   ├── detection/            # YOLO
-│   ├── gui/                  # PySide6 위젯
-│   └── ui/                   # 키보드 입력
 ├── raspberry-pi/             # 로봇
-│   ├── communication/        # 소켓 송수신
 │   ├── camera/               # 영상 캡처
 │   ├── sensor/               # 초음파 등
 │   ├── motor/                # HAL (시뮬/실제)
@@ -35,51 +22,107 @@ disaster-robot/
 │   ├── dynamics/             # Bicycle model, Pacejka tire
 │   ├── control/              # PID, Pure pursuit, Stanley
 │   ├── estimation/           # Odometry, Kalman filter
-│   └── protocol/             # 명령/텔레메트리 메시지 정의
-├── shared/                   # 양쪽 공유 (프로토콜, 유틸)
-└── docs/                     # 학습 노트, 설계 결정 기록
+│   └── tools/                # 하드웨어 점검/캘리브레이션 스크립트
+├── shared/                   # Config 로더
+└── docs/                     # 시각화 결과
 ```
 
-## 실행 (시뮬레이션)
+## 실행 환경 (라즈베리파이)
+
+- 프로젝트: `~/disaster-robot`
+- Python 환경: `~/dr-env`
+- 프로젝트 내부 `venv/`는 사용하지 않는다.
+
+## 실행
+
+### Windows CMD에서 바로 실행
+
+현재 라즈베리파이 주소가 `10.92.223.146`일 때:
+
+```cmd
+ssh -t pi@10.92.223.146 "cd ~/disaster-robot && source ~/dr-env/bin/activate && exec python raspberry-pi/main.py"
+```
+
+IP가 바뀌면 `pi@` 뒤의 주소만 변경한다.
+
+### 이미 SSH로 접속한 경우
 
 ```bash
-# 터미널 1: 로봇 시뮬레이터
-cd raspberry-pi
-python main.py --config ../config/sim.yaml
-
-# 터미널 2: 조종석 GUI
-cd laptop
-python main.py --config ../config/sim.yaml
+cd ~/disaster-robot
+source ~/dr-env/bin/activate
+python raspberry-pi/main.py
 ```
 
-## 실행 (실제 하드웨어)
+옵션 없이 실행하면 실제 하드웨어 모드(`config/real.yaml`)로 동작하며, 실행 즉시 GPIO와
+모터 드라이버를 초기화한다. 실행 전에 주변이 비어 있고 로봇이 갑자기 움직여도 위험하지
+않은 상태인지 먼저 확인한다.
+
+### 하드웨어 없이 테스트
 
 ```bash
-# 라파에서:
-cd raspberry-pi
-python main.py --config ../config/real.yaml
-
-# 노트북에서:
-cd laptop
-python main.py --config ../config/real.yaml
+python raspberry-pi/main.py --sim
 ```
 
-## SSH 터미널에서 직접 조작
+`--sim`을 붙이면 `config/sim.yaml`을 사용하며 실제 GPIO를 사용하지 않는다.
+다른 설정 파일은 `--config <경로>`로 지정할 수 있다.
 
-별도 문서 [`README_SSH.md`](README_SSH.md)를 참고한다.
-
-## 조작
+## 조작키
 
 | 키 | 동작 |
 |---|---|
-| W/S | 전진/후진 |
-| A/D | 좌/우 조향 |
-| Space | 정지 |
-| R/F | 앞바퀴 사이즈 +/- |
-| T/G | 뒷바퀴 사이즈 +/- |
-| M | 조향 모드 전환 (Ackermann/Skid/Crab/Double) |
-| H | 단축키 도움말 토글 |
-| Q | 종료 |
+| `W` / `S` | 전진 / 후진. 누르는 동안 반복 입력되며 0.5초(첫 입력 직후는 1초) 끊기면 자동 정지 |
+| `A` / `D` | 조향값을 왼쪽 / 오른쪽으로 단계 조절 |
+| `C` | 조향 중앙 |
+| `R` / `F` | 정지 상태에서 전체 바퀴 크기 증가 / 감소 |
+| `M` | 정지 후 조향 모드 순환 (Ackermann → SkidSteer → Crab → DoubleAckermann) |
+| `Space` | 즉시 정지 및 조향 중앙 |
+| `Q` | 모터 정지, GPIO 해제 후 종료 |
+| `Ctrl+C` | 안전 종료 |
 
-터미널 모드에서는 `A`/`D`로 조향값을 단계적으로 바꾸고 `C`로 중앙에 맞춘다.
-`R`/`F` 바퀴 크기 변경과 `M` 모드 변경은 정지 상태에서 사용한다.
+`W` 또는 `S` 입력이 0.5초 이상 없으면 데드맨 타이머가 DC 모터를 자동 정지한다.
+키를 처음 누른 직후에는 키보드 반복 입력이 시작되기까지 지연이 있으므로 1초까지 기다린다.
+SSH 입력이 종료되거나 프로그램에서 예외가 발생해도 종료 처리에서 모터 정지와
+GPIO 해제를 시도한다.
+
+정상 종료 메시지는 다음과 같다.
+
+```text
+[Terminal] 모터 정지 및 GPIO 해제 완료
+```
+
+## 문제 해결
+
+### `터미널 제어는 TTY가 필요합니다`
+
+SSH 접속 시 `-t` 옵션을 사용한다.
+
+```cmd
+ssh -t pi@10.92.223.146
+```
+
+### 실제 모터 초기화 실패
+
+반드시 `~/dr-env`을 활성화했는지 확인한다.
+
+```bash
+source ~/dr-env/bin/activate
+python -c "import cv2, lgpio, board, adafruit_pca9685; print('OK')"
+/usr/sbin/i2cdetect -y 1
+```
+
+I2C 표에 PCA9685 주소 `40`이 보여야 한다.
+
+### 라즈베리파이 IP 확인
+
+라즈베리파이 터미널에서:
+
+```bash
+hostname -I
+```
+
+표시된 LAN 주소를 SSH 명령의 `pi@<IP>`에 사용한다.
+
+### Real 모드에서 ConfigValidationError
+
+`config/real.yaml`의 0.0 placeholder를 실제 값으로 채워야 한다. 에러 메시지에 어느 필드가
+비었는지 표시된다.

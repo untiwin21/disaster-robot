@@ -9,19 +9,10 @@
 ```
 disaster-robot/
 ├── config/                   # YAML 파라미터 (sim.yaml 시뮬용, real.yaml 실제용)
-├── shared/                   # 양쪽 공유
-│   ├── config.py            # YAML → dataclass 로더 + 검증
-│   ├── messages.py          # JSON 메시지 정의 (DriveCommand 등)
-│   ├── tcp_framing.py       # 길이-prefix TCP framing
-│   └── udp_video.py         # 영상 청크 분할/재조립
-├── laptop/                   # 조종석 (노트북)
-│   ├── main.py              # 진입점
-│   ├── communication/       # 통신 매니저
-│   ├── detection/           # YOLO
-│   ├── gui/                 # PySide6 위젯들
-│   └── ui/                  # cv2 키보드 (deprecated, 참고용)
+├── shared/
+│   └── config.py            # YAML → dataclass 로더 + 검증
 └── raspberry-pi/            # 로봇 (라파)
-    ├── main.py              # 진입점 (3 스레드)
+    ├── main.py              # 진입점 (SSH 터미널 제어)
     ├── camera/              # 카메라 HAL
     ├── motor/               # 모터 HAL
     ├── sensor/              # 센서 HAL
@@ -251,34 +242,6 @@ motor.set_wheel_velocities([...])  # 같은 메서드
 
 하드웨어 도착 후 `gpio_motor.py` 채우면 다른 코드 안 건드려도 됨.
 
-#### 통신 (`shared/`)
-
-**3채널 분리**
-- UDP 9999: 영상 (손실 OK, 청크 분할)
-- TCP 9998: 제어 명령 (손실 X)
-- TCP 9997: 텔레메트리 (손실 X)
-
-**메시지 형식**: dataclass → JSON → bytes
-
-**TCP framing**: 길이 prefix (4B) + payload
-**UDP chunking**: frame_id + total + index 헤더 + payload
-
----
-
-### Phase 7: GUI (`laptop/gui/`)
-
-**PySide6 시그널-슬롯**
-- VideoWidget이 키 입력 → 시그널 발생
-- MainWindow의 슬롯이 받아서 처리
-
-**듀얼 타이머**
-- 30Hz: 영상/텔레메트리/명령 송신
-- 60Hz: 키 입력 처리 (부드러운 throttle 변화)
-
-**커스텀 페인팅 (QPainter)**
-- Radar: 동심원 + 부채꼴 + 색상 + 라벨
-- TimeSeries: 그리드 + 라인 그래프
-
 ---
 
 ## 시각화 결과 모음 (`docs/`)
@@ -293,8 +256,6 @@ motor.set_wheel_velocities([...])  # 같은 메서드
 | `path_tracking.png` | Pure Pursuit vs Stanley |
 | `estimation.png` | Odometry vs EKF |
 | `estimation_error.png` | 오차 시계열 |
-| `gui_screenshot.png` | GUI 미리보기 (가짜 데이터) |
-| `gui_full_t1.png`, `gui_full_t8.png` | 실제 통신 GUI |
 
 각 시각화는 해당 모듈의 `visualize.py` 실행으로 재생성 가능.
 
@@ -307,8 +268,7 @@ motor.set_wheel_velocities([...])  # 같은 메서드
    - PCA9685 또는 직접 GPIO PWM
    - 캘리브레이션 (PWM ↔ 속도/각도)
 3. `raspberry-pi/sensor/ultrasonic.py`의 `GpioUltrasonicHAL` 구현
-4. 실제 카메라로 영상 송신 테스트
-5. 변형 바퀴와 odometry 통합 (반경 가변 처리)
+4. 변형 바퀴와 odometry 통합 (반경 가변 처리)
 
 ---
 
@@ -322,5 +282,4 @@ motor.set_wheel_velocities([...])  # 같은 메서드
 6. **Stanley** - PP와 비교
 7. **Odometry** - 단순
 8. **KF → EKF** - 가장 어려움. 천천히
-9. **시스템 (통신/HAL)** - 코드 양 많지만 패턴 단순
-10. **GUI** - 시각적이라 빨리 읽힘
+9. **시스템 (HAL)** - 코드 양 많지만 패턴 단순

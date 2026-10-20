@@ -5,17 +5,6 @@
 
 mode: real
 
-network:
-  laptop_ip: "10.92.223.157" # 로컬 Wi-Fi 노트북
-  rpi_ip: "10.92.223.146" # 로컬 Wi-Fi 라즈베리파이
-  video_port: 9999
-  command_port: 9998
-  telemetry_port: 9997
-  video_chunk_size: 1400
-  modes:
-    dev-wired:
-      laptop_ip: "192.168.137.1" # 데스크탑 ICS
-
 motor_pins:
   # PCA9685 채널 (서보)
   transform_channels: [0, 1, 2, 3, 4, 5] # 변형 서보 6개 (FL, FR, ML, MR, RL, RR)
@@ -56,12 +45,6 @@ camera:
   jpeg_quality: 70
   send_width: 320
   send_height: 240
-
-yolo:
-  model_path: "yolov8n.pt"
-  confidence_threshold: 0.5
-  detect_every_n_frames: 3
-  target_classes: [0]
 
 robot:
   # ⚠️ 기계팀 설계 도착 후 반드시 업데이트
@@ -136,17 +119,3 @@ sensors:
     warning_threshold: 0.80
 
 # real 모드에선 simulation 섹션 무시됨
-
-gui:
-  window_title: "Disaster Rescue Robot - Operator Console"
-  fullscreen: false
-  width: 1600
-  height: 900
-  theme: "dark"
-  fps_target: 30
-  show_help_on_startup: true
-
-safety:
-  command_timeout: 3.0
-  video_timeout: 3.0
-  enable_return_to_base: true

@@ -1,19 +1,8 @@
 ﻿# config/sim.yaml
-# 시뮬레이션 전용 설정 - localhost에서 두 프로세스 실행
+# 시뮬레이션 전용 설정 - 실제 GPIO 없이 터미널 제어 테스트
 # ⚠️ 모든 물리 파라미터는 임시값. 실제 하드웨어 도착 후 real.yaml 사용
 
 mode: simulation
-
-# ─────────────────────────────────────────────
-# 네트워크
-# ─────────────────────────────────────────────
-network:
-  laptop_ip: "0.0.0.0"     # 같은 PC에서 두 프로세스 실행
-  rpi_ip: "0.0.0.0"
-  video_port: 9999
-  command_port: 9998
-  telemetry_port: 9997
-  video_chunk_size: 1400
 
 # ─────────────────────────────────────────────
 # 카메라
@@ -26,15 +15,6 @@ camera:
   jpeg_quality: 70
   send_width: 320        # 송신 시 다운스케일
   send_height: 240
-
-# ─────────────────────────────────────────────
-# YOLO
-# ─────────────────────────────────────────────
-yolo:
-  model_path: "yolov8n.pt"
-  confidence_threshold: 0.5
-  detect_every_n_frames: 3
-  target_classes: [0]    # COCO: 0=person
 
 # ─────────────────────────────────────────────
 # 로봇 물리 파라미터 (시뮬용 임시값)
@@ -131,23 +111,3 @@ simulation:
   fake_obstacle_distance: 1.5  # 가짜 초음파가 반환할 기본 거리
   fake_obstacle_noise: 0.05    # 노이즈 표준편차
   motor_response_delay: 0.02   # [s] 가짜 모터 응답 지연
-
-# ─────────────────────────────────────────────
-# GUI
-# ─────────────────────────────────────────────
-gui:
-  window_title: "Disaster Rescue Robot - Operator Console"
-  fullscreen: false
-  width: 1600
-  height: 900
-  theme: "dark"
-  fps_target: 30
-  show_help_on_startup: true
-
-# ─────────────────────────────────────────────
-# 안전
-# ─────────────────────────────────────────────
-safety:
-  command_timeout: 3.0         # [s] 마지막 명령 후 이 시간 지나면 정지
-  video_timeout: 3.0           # [s] 영상 끊김 감지
-  enable_return_to_base: true  # 통신 끊겼을 때 역방향 자동 복귀

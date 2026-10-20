@@ -1,6 +1,5 @@
 name: disaster-robot
 channels:
-  - pytorch
   - conda-forge
   - defaults
 dependencies:
@@ -10,9 +9,3 @@ dependencies:
   - pyyaml
   - matplotlib
   - opencv
-  # PyTorch (YOLO가 의존) - CPU 버전. GPU 쓰려면 pytorch-cuda 추가
-  - pytorch
-  - torchvision
-  - pip:
-      - ultralytics
-      - PySide6

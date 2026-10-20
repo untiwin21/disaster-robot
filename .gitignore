@@ -20,9 +20,6 @@ dr-env/
 .DS_Store
 Thumbs.db
 
-# YOLO weights (큰 파일)
-yolov8n.pt
-
 # 캘리브레이션 (각 환경별 다름)
 config/calibration.yaml
 

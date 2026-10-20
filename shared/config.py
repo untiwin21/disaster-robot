@@ -21,21 +21,6 @@ import yaml
 # ════════════════════════════════════════════════════════════════
 
 @dataclass
-class NetworkConfig:
-    laptop_ip: str
-    rpi_ip: str
-    video_port: int
-    command_port: int
-    telemetry_port: int
-    video_chunk_size: int
-    modes: Optional[dict] = None
-    
-    def __post_init__(self):
-        if self.modes is None:
-            self.modes = {}
-
-
-@dataclass
 class CameraConfig:
     device_index: int
     width: int
@@ -44,14 +29,6 @@ class CameraConfig:
     jpeg_quality: int
     send_width: int
     send_height: int
-
-
-@dataclass
-class YoloConfig:
-    model_path: str
-    confidence_threshold: float
-    detect_every_n_frames: int
-    target_classes: List[int]
 
 
 @dataclass
@@ -154,36 +131,14 @@ class SimulationConfig:
 
 
 @dataclass
-class GuiConfig:
-    window_title: str
-    fullscreen: bool
-    width: int
-    height: int
-    theme: str
-    fps_target: int
-    show_help_on_startup: bool
-
-
-@dataclass
-class SafetyConfig:
-    command_timeout: float
-    video_timeout: float
-    enable_return_to_base: bool
-
-
-@dataclass
 class Config:
     """루트 설정 객체"""
     mode: str                 # "simulation" or "real"
-    network: NetworkConfig
     camera: CameraConfig
-    yolo: YoloConfig
     robot: RobotConfig
     tire: TireConfig
     control: ControlConfig
     sensors: SensorsConfig
-    gui: GuiConfig
-    safety: SafetyConfig
     simulation: Optional[SimulationConfig] = None  # real 모드에선 None
     motor_pins: Optional[dict] = None              # 실기 GPIO 핀 매핑 (real 모드)
     encoder_pins: Optional[dict] = None            # 엔코더 핀/분해능 (real 모드)
@@ -220,9 +175,7 @@ def _build_config(data: dict) -> Config:
     
     config = Config(
         mode=data['mode'],
-        network=NetworkConfig(**data['network']),
         camera=CameraConfig(**data['camera']),
-        yolo=YoloConfig(**data['yolo']),
         robot=RobotConfig(
             wheelbase=robot_data['wheelbase'],
             middle_axle_offset=robot_data['middle_axle_offset'],
@@ -252,8 +205,6 @@ def _build_config(data: dict) -> Config:
                 warning_threshold=sensors_data['ultrasonic']['warning_threshold'],
             )
         ),
-        gui=GuiConfig(**data['gui']),
-        safety=SafetyConfig(**data['safety']),
     )
     
     if 'simulation' in data and data['simulation']:
@@ -288,26 +239,12 @@ def _validate_config(config: Config) -> None:
         )
     
     # 공통 검증
-    _validate_network(config.network)
     _validate_camera(config.camera)
     _validate_sensors(config.sensors)
     
     # real 모드는 더 엄격하게
     if config.mode == "real":
         _validate_real_robot(config.robot)
-
-
-def _validate_network(net: NetworkConfig) -> None:
-    if not (1024 <= net.video_port <= 65535):
-        raise ConfigValidationError(f"video_port 범위 벗어남: {net.video_port}")
-    if not (1024 <= net.command_port <= 65535):
-        raise ConfigValidationError(f"command_port 범위 벗어남: {net.command_port}")
-    if not (1024 <= net.telemetry_port <= 65535):
-        raise ConfigValidationError(f"telemetry_port 범위 벗어남: {net.telemetry_port}")
-    if net.video_chunk_size > 1472:  # IPv4 MTU(1500) - IP(20) - UDP(8)
-        raise ConfigValidationError(
-            f"video_chunk_size가 너무 큼 (≤1472 권장): {net.video_chunk_size}"
-        )
 
 
 def _validate_camera(cam: CameraConfig) -> None:
@@ -377,4 +314,3 @@ if __name__ == "__main__":
     print(f"  - 로봇 wheelbase: {config.robot.wheelbase} m")
     print(f"  - 로봇 track: {config.robot.track} m")
     print(f"  - 초음파 센서 개수: {len(config.sensors.ultrasonic.sensors)}")
-    print(f"  - GUI: {config.gui.width}x{config.gui.height}")

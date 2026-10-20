@@ -3,9 +3,6 @@ pyyaml
 numpy
 opencv-python
 
-# Laptop side
-ultralytics       # YOLOv8
-PySide6           # GUI
 matplotlib        # 시각화 (visualize.py들)
 
 # Raspberry Pi side (실제 라파에서)
