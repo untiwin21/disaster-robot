@@ -131,6 +131,16 @@ class SimulationConfig:
 
 
 @dataclass
+class RecordingConfig:
+    """USB 카메라 영상/소리 녹화 (yaml에 없으면 기본값)"""
+    enabled: bool = True
+    output_dir: str = "recordings"   # 상대 경로면 프로젝트 루트 기준
+    segment_seconds: int = 600       # 파일 분할 주기 [s]
+    audio: bool = True               # USB 마이크 녹음
+    min_free_mb: int = 500           # 남은 공간이 이보다 적으면 녹화 중지
+
+
+@dataclass
 class Config:
     """루트 설정 객체"""
     mode: str                 # "simulation" or "real"
@@ -140,6 +150,7 @@ class Config:
     control: ControlConfig
     sensors: SensorsConfig
     simulation: Optional[SimulationConfig] = None  # real 모드에선 None
+    recording: RecordingConfig = field(default_factory=RecordingConfig)
     motor_pins: Optional[dict] = None              # 실기 GPIO 핀 매핑 (real 모드)
     encoder_pins: Optional[dict] = None            # 엔코더 핀/분해능 (real 모드)
     optical_flow_scale: float = 0.001              # px/sec → m/s 변환계수 (캘리브레이션 전 placeholder)
@@ -209,6 +220,9 @@ def _build_config(data: dict) -> Config:
     
     if 'simulation' in data and data['simulation']:
         config.simulation = SimulationConfig(**data['simulation'])
+    
+    if 'recording' in data and data['recording']:
+        config.recording = RecordingConfig(**data['recording'])
     
     if 'motor_pins' in data and data['motor_pins']:
         config.motor_pins = data['motor_pins']

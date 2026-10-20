@@ -11,10 +11,9 @@ import sys
 import math
 from pathlib import Path
 
-# raspberry-pi/, shared/ 경로 추가
-ROOT = Path(__file__).resolve().parent.parent.parent
+# 프로젝트 루트 경로 추가
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "raspberry-pi"))
 
 import matplotlib.pyplot as plt
 import numpy as np

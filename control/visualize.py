@@ -10,9 +10,8 @@ import sys
 import math
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "raspberry-pi"))
 
 import matplotlib.pyplot as plt
 import numpy as np

@@ -10,9 +10,8 @@ import sys
 import math
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "raspberry-pi"))
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -151,7 +150,6 @@ def main():
     # ─────────────────────────────────────────
     # Figure 3: Kinematic vs Dynamic 비교
     # ─────────────────────────────────────────
-    sys.path.insert(0, str(ROOT / "raspberry-pi"))
     from kinematics import KinematicsManager, FL, FR, ML, MR, RL, RR
     
     fig3, ax3 = plt.subplots(figsize=(10, 7))

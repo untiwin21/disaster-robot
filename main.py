@@ -17,9 +17,8 @@ import argparse
 from pathlib import Path
 
 # 경로 설정
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "raspberry-pi"))
 
 from shared.config import load_config, Config
 
@@ -158,6 +157,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--sim', action='store_true',
                         help='실제 GPIO 없이 시뮬레이션 (config/sim.yaml)')
+    parser.add_argument('--no-record', action='store_true',
+                        help='USB 카메라 영상/소리 녹화 끄기')
     parser.add_argument('--config', default=None,
                         help='config YAML 경로 (기본: config/real.yaml, --sim이면 config/sim.yaml)')
     # 이전 실행 명령 호환용 (항상 터미널 제어)
@@ -167,7 +168,22 @@ def main():
     config_path = args.config or ('config/sim.yaml' if args.sim else 'config/real.yaml')
     config = load_config(ROOT / config_path)
     print(f"[Main] Config 로드 완료 (mode={config.mode})")
-    terminal_control(config)
+
+    recorder = None
+    if not args.no_record:
+        try:
+            from camera.recorder import create_recorder
+            recorder = create_recorder(config, ROOT)
+        except Exception as e:
+            print(f"[Main] 녹화 기능 비활성화: {e}")
+    if recorder is not None:
+        recorder.start()
+
+    try:
+        terminal_control(config)
+    finally:
+        if recorder is not None:
+            recorder.stop()
 
 
 if __name__ == "__main__":

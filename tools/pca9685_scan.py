@@ -4,7 +4,7 @@ PCA9685 연결 확인 도구
 라파에서 가장 먼저 실행. I2C가 활성화돼있고 PCA9685가 연결됐는지 확인.
 
 [사용법]
-    python3 raspberry-pi/tools/pca9685_scan.py
+    python3 tools/pca9685_scan.py
 
 [기대 출력 (성공)]
     [Scan] I2C 버스 1 스캔 중...
@@ -33,9 +33,8 @@ import time
 from pathlib import Path
 
 # 경로 설정
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "raspberry-pi"))
 
 
 def scan_i2c():

@@ -5,7 +5,7 @@ Servo Calibration Tool
 결과를 calibration.yaml 에 저장.
 
 [사용법]
-    python3 raspberry-pi/tools/servo_calibration.py
+    python3 tools/servo_calibration.py
 
 [키 조작]
     채널 선택:
@@ -56,9 +56,8 @@ import os
 from pathlib import Path
 
 # 경로 설정
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "raspberry-pi"))
 
 from motor.calibration import (
     MotorCalibration, ServoCalibration,

@@ -6,25 +6,26 @@
 SSH로 접속할 수 있는 네트워크라면 Wi-Fi, 유선 LAN 등 연결 방식은 상관없다.
 
 ```
-[SSH 터미널 키 입력] ──▶ raspberry-pi/main.py ──▶ Kinematics ──▶ Motor HAL (BTS7960 / PCA9685)
+[SSH 터미널 키 입력] ──▶ main.py ──▶ Kinematics ──▶ Motor HAL (BTS7960 / PCA9685)
 ```
 
 ## 디렉토리
 
 ```
 disaster-robot/
+├── main.py                   # 엔트리 포인트 (SSH 터미널 제어)
 ├── config/                   # YAML 파라미터 (하드웨어 스펙, 제어 게인 등)
-├── raspberry-pi/             # 로봇
-│   ├── camera/               # 영상 캡처
-│   ├── sensor/               # 초음파 등
-│   ├── motor/                # HAL (시뮬/실제)
-│   ├── kinematics/           # Ackermann, Skid, Crab, Double Ackermann
-│   ├── dynamics/             # Bicycle model, Pacejka tire
-│   ├── control/              # PID, Pure pursuit, Stanley
-│   ├── estimation/           # Odometry, Kalman filter
-│   └── tools/                # 하드웨어 점검/캘리브레이션 스크립트
+├── camera/                   # 영상 캡처
+├── sensor/                   # 초음파 등
+├── motor/                    # HAL (시뮬/실제)
+├── kinematics/               # Ackermann, Skid, Crab, Double Ackermann
+├── dynamics/                 # Bicycle model, Pacejka tire
+├── control/                  # PID, Pure pursuit, Stanley
+├── estimation/               # Odometry, Kalman filter
+├── tools/                    # 하드웨어 점검/캘리브레이션 스크립트
 ├── shared/                   # Config 로더
-└── docs/                     # 시각화 결과
+├── docs/                     # 시각화 결과
+└── WIRING.md                 # 결선 정보
 ```
 
 ## 실행 환경 (라즈베리파이)
@@ -40,7 +41,7 @@ disaster-robot/
 현재 라즈베리파이 주소가 `10.92.223.146`일 때:
 
 ```cmd
-ssh -t pi@10.92.223.146 "cd ~/disaster-robot && source ~/dr-env/bin/activate && exec python raspberry-pi/main.py"
+ssh -t pi@10.92.223.146 "cd ~/disaster-robot && source ~/dr-env/bin/activate && exec python main.py"
 ```
 
 IP가 바뀌면 `pi@` 뒤의 주소만 변경한다.
@@ -50,7 +51,7 @@ IP가 바뀌면 `pi@` 뒤의 주소만 변경한다.
 ```bash
 cd ~/disaster-robot
 source ~/dr-env/bin/activate
-python raspberry-pi/main.py
+python main.py
 ```
 
 옵션 없이 실행하면 실제 하드웨어 모드(`config/real.yaml`)로 동작하며, 실행 즉시 GPIO와
@@ -60,11 +61,36 @@ python raspberry-pi/main.py
 ### 하드웨어 없이 테스트
 
 ```bash
-python raspberry-pi/main.py --sim
+python main.py --sim
 ```
 
 `--sim`을 붙이면 `config/sim.yaml`을 사용하며 실제 GPIO를 사용하지 않는다.
 다른 설정 파일은 `--config <경로>`로 지정할 수 있다.
+
+## USB 카메라 녹화
+
+`main.py`를 실행하면 USB 카메라 연결을 감시하다가, 카메라가 연결되면 영상과 소리(카메라
+마이크)를 자동으로 녹화한다. 카메라를 뽑으면 녹화를 멈추고, 다시 꽂으면 새 파일로 녹화한다.
+
+- 저장 위치: `~/disaster-robot/recordings/YYYYmmdd_HHMMSS.mkv`
+- 10분(`segment_seconds`)마다 새 파일로 나눠 저장한다.
+- 카메라의 MJPEG 영상을 재인코딩 없이 저장해서 CPU를 거의 쓰지 않는다. MJPEG를 지원하지 않는
+  카메라는 H.264로 인코딩한다.
+- 남은 저장 공간이 500MB(`min_free_mb`) 미만이면 녹화를 멈춘다.
+- 녹화를 끄려면 `--no-record`를 붙이거나 config의 `recording.enabled`를 `false`로 바꾼다.
+- ffmpeg 에러 로그는 `recordings/ffmpeg.log`에 남는다.
+
+처음 한 번 ffmpeg를 설치해야 한다.
+
+```bash
+sudo apt install ffmpeg
+```
+
+녹화 파일을 노트북으로 가져오려면 노트북에서:
+
+```bash
+scp "pi@10.92.223.146:~/disaster-robot/recordings/*.mkv" .
+```
 
 ## 조작키
 
@@ -112,6 +138,14 @@ python -c "import cv2, lgpio, board, adafruit_pca9685; print('OK')"
 
 I2C 표에 PCA9685 주소 `40`이 보여야 한다.
 
+### 녹화가 시작되지 않음
+
+```bash
+ls /dev/v4l/by-id/          # usb-...-video-index0 이 보여야 함
+arecord -l                  # 카메라 마이크가 capture 장치로 보여야 함
+tail -n 30 ~/disaster-robot/recordings/ffmpeg.log
+```
+
 ### 라즈베리파이 IP 확인
 
 라즈베리파이 터미널에서:
@@ -126,3 +160,14 @@ hostname -I
 
 `config/real.yaml`의 0.0 placeholder를 실제 값으로 채워야 한다. 에러 메시지에 어느 필드가
 비었는지 표시된다.
+
+## 시각화 (이론 모듈 결과 확인)
+
+```bash
+python kinematics/visualize.py   # 조향 모드 비교
+python dynamics/visualize.py     # Pacejka, Bicycle
+python control/visualize.py      # PID, Path tracking
+python estimation/visualize.py   # Odometry vs EKF
+```
+
+결과는 `docs/` 폴더에 PNG 파일로 저장된다.

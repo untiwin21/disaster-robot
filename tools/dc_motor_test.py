@@ -7,7 +7,7 @@ BTS7960 듀얼 채널 (좌/우 그룹) DC 모터를 키보드로 직접 조작.
 - 좌/우 동기화 확인
 
 [사용법]
-    python3 raspberry-pi/tools/dc_motor_test.py
+    python3 tools/dc_motor_test.py
 
 [키 조작]
     좌측 그룹:
@@ -41,9 +41,8 @@ import time
 import os
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent.parent
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(ROOT / "raspberry-pi"))
 
 
 def clear_screen():

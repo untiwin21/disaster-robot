@@ -26,5 +26,8 @@ config/calibration.yaml
 # Logs
 *.log
 
+# 녹화 파일
+recordings/
+
 # Build artifacts
 *.spec.bak
