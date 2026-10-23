@@ -3,10 +3,12 @@ Raspberry Pi Main
 
 SSH 터미널에서 로봇을 직접 조작한다. 네트워크/GUI 원격 제어는 없다.
 
-    [SSH 키 입력] ──▶ [Kinematics] ──▶ [Motor HAL]
+    [SSH 키 입력] ──▶ [좌/우 모터 직접 제어] ──▶ [Motor HAL]
+
+W/S는 왼쪽 모터, ↑/↓는 오른쪽 모터를 앞뒤로 돌린다 (탱크식). 조향 서보는 중앙 고정.
 
 [안전]
-- W/S 입력이 끊기면 데드맨 타이머가 모터를 정지
+- 주행 키 입력이 끊기면 데드맨 타이머가 모터를 정지
 - 종료/예외 시 모터 정지 + GPIO 해제
 """
 
@@ -23,7 +25,44 @@ sys.path.insert(0, str(ROOT))
 from shared.config import load_config, Config
 
 from motor import SimMotorHAL, create_motor_hal
-from kinematics import KinematicsManager
+
+
+# 주행 키 → (모터, 방향). 모터 0: 왼쪽, 1: 오른쪽
+DRIVE_KEYS = {
+    "w": (0, 1), "s": (0, -1),
+    "up": (1, 1), "down": (1, -1),
+}
+
+
+def split_keys(buf: str) -> tuple[list[str], str]:
+    """입력 버퍼를 키 단위로 나눈다. 화살표 ↑/↓는 "up"/"down"으로 바꾼다.
+
+    끝이 잘린 escape 시퀀스는 다음 입력과 이어 붙이도록 나머지로 돌려준다.
+    """
+    keys = []
+    i = 0
+    while i < len(buf):
+        if buf[i] != "\x1b":
+            keys.append(buf[i])
+            i += 1
+            continue
+        if i + 1 >= len(buf):
+            break
+        if buf[i + 1] not in "[O":
+            i += 1  # 단독 ESC는 무시
+            continue
+        # CSI(ESC [ ... final) / SS3(ESC O final). final 바이트는 0x40~0x7E
+        j = i + 2
+        while j < len(buf) and not ("\x40" <= buf[j] <= "\x7e"):
+            j += 1
+        if j >= len(buf):
+            break
+        if buf[j] == "A":
+            keys.append("up")
+        elif buf[j] == "B":
+            keys.append("down")
+        i = j + 1
+    return keys, buf[i:]
 
 
 def terminal_control(config: Config) -> None:
@@ -42,109 +81,107 @@ def terminal_control(config: Config) -> None:
     if not config.is_simulation and isinstance(motor, SimMotorHAL):
         motor.shutdown()
         raise RuntimeError("실제 모터 초기화에 실패하여 터미널 제어를 중단합니다.")
-    kinematics_mgr = KinematicsManager(config.robot)
+    motor.set_steer_angles([0.0] * 6)
 
-    drive_dir = 0       # 1: 전진, -1: 후진, 0: 정지
-    speed = 0.5         # 속도 단계 [0.1, 1.0] (throttle = drive_dir × speed)
+    max_velocity = config.robot.motion.max_velocity
+    drive = [0, 0]      # [왼쪽, 오른쪽] 1: 전진, -1: 후진, 0: 정지
+    speed = 0.5         # 속도 단계 [0.1, 1.0] (출력 = 방향 × speed)
     speed_step = 0.1
-    steer = 0.0
     wheel_sizes = [0.0] * 6
     drive_deadline = 0.0
+    last_drive_key = None
     deadman_timeout = 0.5
     # 키를 누른 직후에는 OS 키 반복 지연(보통 0.5초 이상)과 SSH 지연이 겹치므로
-    # 첫 입력에만 여유를 더 준다.
+    # 새 키의 첫 입력에만 여유를 더 준다.
     initial_deadman_timeout = 1.0
     loop_interval = 1.0 / max(1, config.control.loop_rate)
     fd = sys.stdin.fileno()
     old_settings = termios.tcgetattr(fd)
+    pending = ""
 
     def show_status(message: str = "") -> None:
         status = (
-            f"mode={kinematics_mgr.current_name:<17} "
-            f"speed={speed * 100:3.0f}% throttle={drive_dir * speed:+.1f} steer={steer:+.1f} "
+            f"speed={speed * 100:3.0f}% left={drive[0] * speed:+.1f} right={drive[1] * speed:+.1f} "
             f"wheel_size={wheel_sizes[0]:.1f}"
         )
         if message:
             status += f" | {message}"
         print(f"\r{status:<110}", end="", flush=True)
 
-    print("[Terminal] W/S: 전진/후진(누르는 동안)  A/D: 조향  C: 조향 중앙")
+    print("[Terminal] W/S: 왼쪽 모터 전진/후진  ↑/↓: 오른쪽 모터 전진/후진 (누르는 동안)")
     print("[Terminal] 1~9/0: 속도 10~90/100%  +/-: 속도 ±10%")
-    print("[Terminal] R/F: 바퀴 크기 +/-  M: 조향 모드  Space: 정지  Q: 종료")
+    print("[Terminal] R/F: 바퀴 크기 +/-  Space: 정지  Q: 종료")
     print(
-        f"[Terminal] W/S 입력이 {deadman_timeout:.1f}초 끊기면 자동 정지합니다. "
+        f"[Terminal] 주행 키 입력이 {deadman_timeout:.1f}초 끊기면 자동 정지합니다. "
         f"(첫 입력 후 {initial_deadman_timeout:.1f}초)"
     )
 
     try:
         tty.setcbreak(fd)
         show_status("준비 완료")
+        running = True
 
-        while True:
+        while running:
             now = time.monotonic()
             readable, _, _ = select.select([sys.stdin], [], [], 0)
             message = ""
 
             if readable:
-                key = os.read(fd, 1).decode(errors="ignore")
-                if key == "":
+                data = os.read(fd, 64)
+                if not data:
                     message = "SSH 입력 종료"
                     break
+                keys, pending = split_keys(pending + data.decode(errors="ignore"))
 
-                key_lower = key.lower()
-                if key_lower == "q" or key == "\x03":
-                    message = "종료"
-                    break
-                elif key == " ":
-                    drive_dir = 0
-                    steer = 0.0
-                    drive_deadline = 0.0
-                    motor.emergency_stop()
-                    message = "EMERGENCY STOP"
-                elif key_lower in ("w", "s"):
-                    new_dir = 1 if key_lower == "w" else -1
-                    timeout = deadman_timeout if drive_dir == new_dir else initial_deadman_timeout
-                    drive_dir = new_dir
-                    drive_deadline = now + timeout
-                elif key.isdigit():
-                    speed = 1.0 if key == "0" else int(key) / 10
-                    message = f"속도 → {speed * 100:.0f}%"
-                elif key in ("+", "=", "-", "_"):
-                    delta = speed_step if key in ("+", "=") else -speed_step
-                    speed = round(max(speed_step, min(1.0, speed + delta)), 2)
-                    message = f"속도 → {speed * 100:.0f}%"
-                elif key_lower == "a":
-                    steer = min(1.0, steer + 0.2)
-                elif key_lower == "d":
-                    steer = max(-1.0, steer - 0.2)
-                elif key_lower == "c":
-                    steer = 0.0
-                elif key_lower == "m":
-                    drive_dir = 0
-                    drive_deadline = 0.0
-                    motor.emergency_stop()
-                    message = f"조향 모드 → {kinematics_mgr.cycle_next()}"
-                elif key_lower in ("r", "f"):
-                    if drive_dir != 0:
-                        message = "정지 상태에서만 바퀴 크기 변경 가능"
-                    else:
-                        delta = 0.1 if key_lower == "r" else -0.1
-                        size = max(0.0, min(1.0, wheel_sizes[0] + delta))
-                        wheel_sizes = [size] * 6
-                        motor.set_wheel_sizes(wheel_sizes)
-                        message = f"바퀴 크기 → {size:.1f}"
+                for key in keys:
+                    key_lower = key.lower()
+                    if key_lower == "q" or key == "\x03":
+                        message = "종료"
+                        running = False
+                        break
+                    elif key == " ":
+                        drive = [0, 0]
+                        drive_deadline = 0.0
+                        last_drive_key = None
+                        motor.emergency_stop()
+                        message = "EMERGENCY STOP"
+                    elif key_lower in DRIVE_KEYS:
+                        # 터미널은 마지막에 누른 키만 반복 입력하므로 데드맨은 좌/우 공용.
+                        # 두 키를 같이 누르고 있으면 양쪽 모두 계속 돈다.
+                        side, direction = DRIVE_KEYS[key_lower]
+                        drive[side] = direction
+                        timeout = deadman_timeout if key_lower == last_drive_key else initial_deadman_timeout
+                        drive_deadline = max(drive_deadline, now + timeout)
+                        last_drive_key = key_lower
+                    elif key.isdigit():
+                        speed = 1.0 if key == "0" else int(key) / 10
+                        message = f"속도 → {speed * 100:.0f}%"
+                    elif key in ("+", "=", "-", "_"):
+                        delta = speed_step if key in ("+", "=") else -speed_step
+                        speed = round(max(speed_step, min(1.0, speed + delta)), 2)
+                        message = f"속도 → {speed * 100:.0f}%"
+                    elif key_lower in ("r", "f"):
+                        if any(drive):
+                            message = "정지 상태에서만 바퀴 크기 변경 가능"
+                        else:
+                            delta = 0.1 if key_lower == "r" else -0.1
+                            size = max(0.0, min(1.0, wheel_sizes[0] + delta))
+                            wheel_sizes = [size] * 6
+                            motor.set_wheel_sizes(wheel_sizes)
+                            message = f"바퀴 크기 → {size:.1f}"
 
                 show_status(message)
 
             now = time.monotonic()
-            if drive_dir != 0 and now >= drive_deadline:
-                drive_dir = 0
+            if any(drive) and now >= drive_deadline:
+                drive = [0, 0]
+                last_drive_key = None
                 motor.emergency_stop()
                 show_status("데드맨 타임아웃 → 자동 정지")
 
-            command = kinematics_mgr.compute(drive_dir * speed, steer)
-            motor.set_wheel_velocities([wheel.velocity for wheel in command.wheels])
-            motor.set_steer_angles([wheel.steer_angle for wheel in command.wheels])
+            v_left = drive[0] * speed * max_velocity
+            v_right = drive[1] * speed * max_velocity
+            motor.set_wheel_velocities([v_left, v_right] * 3)  # FL, FR, ML, MR, RL, RR
             time.sleep(loop_interval)
 
     except KeyboardInterrupt:
